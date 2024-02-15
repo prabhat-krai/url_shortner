@@ -8,4 +8,6 @@ public interface UrlMappingRepository extends ReactiveCrudRepository<UrlMapping,
 
     Mono<UrlMapping> findUrlMappingByShortKey(String shortKey);
 
+    Mono<UrlMapping> findUrlMappingByUrl(String url);
+
 }

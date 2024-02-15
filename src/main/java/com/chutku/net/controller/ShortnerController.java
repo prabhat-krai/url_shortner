@@ -3,14 +3,13 @@ package com.chutku.net.controller;
 import com.chutku.net.dal.UrlMappingRepository;
 import com.chutku.net.model.CreateShortened;
 import com.chutku.net.model.UrlMapping;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.concurrent.Executors;
+import java.util.logging.Logger;
 
 @RestController
 public class ShortnerController {
@@ -21,21 +20,42 @@ public class ShortnerController {
         this.urlMappingRepository = urlMappingRepository;
     }
 
-    @GetMapping(value = "/{short-key}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<ResponseEntity<String>> getShort(@PathVariable(value = "short-key") String shortKey) {
-        return urlMappingRepository.findUrlMappingByShortKey(shortKey).map(UrlMapping::url)
+    @GetMapping(value = "/{short-key}")
+    public Mono<ResponseEntity<Object>> getShort(@PathVariable(value = "short-key") String shortKey) {
+        return urlMappingRepository.findUrlMappingByShortKey(shortKey)
+                .filter((r) -> !r.url().isEmpty())
+                .map(UrlMapping::url)
                 .map(url1 -> ResponseEntity
                         .status(301)
                         .header("Location", url1)
-                        .build()
-        );
+                        .build())
+                .defaultIfEmpty(
+                        ResponseEntity.status(404).build()
+                ).doOnError(
+                        e -> {
+                            Logger.getAnonymousLogger().info("Did not find the requested short key " + shortKey);
+                        }
+                ).onErrorReturn(
+                        ResponseEntity.status(422).build()
+                );
     }
 
     @PostMapping
-    public ResponseEntity<Mono<String>> addShort(@RequestBody CreateShortened createShortened) {
+    public Mono<ResponseEntity<String>> addShort(@RequestBody CreateShortened createShortened) {
         String shortKey = shortenString(createShortened.url());
-        Mono<UrlMapping> saved = urlMappingRepository.save(new UrlMapping(null, createShortened.url(), shortKey));
-        return ResponseEntity.ok(saved.map(UrlMapping::shortKey));
+        return urlMappingRepository.findUrlMappingByUrl(createShortened.url())
+            .switchIfEmpty(
+                urlMappingRepository.save(new UrlMapping(null, createShortened.url(), shortKey))
+                    .onErrorResume(
+                        (t) -> urlMappingRepository.save(
+                            new UrlMapping(null, createShortened.url(), shortKey + "a")
+                        )
+                    )
+            )
+            .map(srt -> ResponseEntity.ok(srt.shortKey()))
+            .onErrorReturn(
+                ResponseEntity.status(422).build()
+            );
     }
 
     public static String shortenString(String input) {
