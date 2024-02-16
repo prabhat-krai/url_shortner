@@ -20,7 +20,7 @@ public class ShortnerController {
         this.urlMappingRepository = urlMappingRepository;
     }
 
-    @GetMapping(value = "/{short-key}")
+    @GetMapping(value = "/api/srt/{short-key}")
     public Mono<ResponseEntity<Object>> getShort(@PathVariable(value = "short-key") String shortKey) {
         return urlMappingRepository.findUrlMappingByShortKey(shortKey)
                 .filter((r) -> !r.url().isEmpty())
@@ -40,7 +40,7 @@ public class ShortnerController {
                 );
     }
 
-    @PostMapping
+    @PostMapping("/api/srt")
     public Mono<ResponseEntity<String>> addShort(@RequestBody CreateShortened createShortened) {
         String shortKey = shortenString(createShortened.url());
         return urlMappingRepository.findUrlMappingByUrl(createShortened.url())

@@ -1,0 +1,13 @@
+<link th:href="@{/css/main.css}" rel="stylesheet" />
+<body th:style="'background:url(' + @{/images/background.svg} + '); background-repeat: no-repeat, repeat; background-size: cover;'">
+
+<form action="#"
+      th:action="@{/}"
+      th:object="${createShortened}"
+      method="post">
+    <label for="url">URL: </label>
+    <input type="text" th:field="*{url}" id="url">
+    <input type="submit" value="get short key">
+    <a th:text="${message}" th:href="${message}"></a>
+</form>
+</body>
