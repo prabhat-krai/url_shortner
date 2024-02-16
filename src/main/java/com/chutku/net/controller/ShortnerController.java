@@ -20,7 +20,7 @@ public class ShortnerController {
         this.urlMappingRepository = urlMappingRepository;
     }
 
-    @GetMapping(value = "/api/srt/{short-key}")
+    @GetMapping(value = "/{short-key}")
     public Mono<ResponseEntity<Object>> getShort(@PathVariable(value = "short-key") String shortKey) {
         return urlMappingRepository.findUrlMappingByShortKey(shortKey)
                 .filter((r) -> !r.url().isEmpty())
